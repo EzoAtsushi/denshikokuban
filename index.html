@@ -16,7 +16,8 @@
         <section class="project-strip" aria-label="現場"><label for="projectSelect">現場</label><select id="projectSelect"></select><button id="saveProjectButton" type="button">登録</button></section>
         <nav class="step-tabs" aria-label="作業ステップ"><button class="active" type="button" data-panel="inputPanel">入力</button><button type="button" data-panel="previewPanel">黒板</button><button type="button" data-panel="photoPanel">写真</button><button type="button" data-panel="historyPanel">履歴</button></nav>
         <section class="panel active" id="inputPanel" aria-labelledby="inputHeading">
-          <div class="section-head"><h2 id="inputHeading">黒板情報</h2><div class="head-actions"><button id="copyLastButton" type="button">前回複製</button><button id="saveAndNextButton" type="button">保存して次へ</button></div></div>
+          <div class="section-head"><h2 id="inputHeading">黒板情報</h2><div class="head-actions"><button id="copyLastButton" type="button">前回複製</button><button class="save-and-next-action" id="saveAndNextButton" type="button">次へ保存</button></div></div>
+          <button class="wide-action prep-next-action" id="saveAndNextTopWideButton" type="button" onclick="document.getElementById('saveAndNextButton').click()">この黒板を保存して次へ</button>
           <form id="boardForm" class="field-grid">
             <label>工事件名<input id="projectName" name="projectName" autocomplete="organization" required /></label>
             <label>写真番号<input id="photoNumber" name="photoNumber" inputmode="numeric" /></label>
@@ -30,6 +31,7 @@
               <div class="item-row"><label class="item-toggle"><input id="showWorkContent" name="showWorkContent" type="checkbox" />表示</label><label>項目名<input id="labelWorkContent" name="labelWorkContent" /></label><label class="item-value">内容<textarea id="workContent" name="workContent" rows="4" placeholder="施工前確認&#10;出来形確認&#10;品質確認&#10;完了確認"></textarea></label></div>
               <div class="item-row"><label class="item-toggle"><input id="showNote" name="showNote" type="checkbox" />表示</label><label>項目名<input id="labelNote" name="labelNote" /></label><label class="item-value">内容<textarea id="note" name="note" rows="2" placeholder="施工前、出来形確認など"></textarea></label></div>
             </fieldset>
+            <button class="wide-action prep-next-action span-2" id="saveAndNextWideButton" type="button" onclick="document.getElementById('saveAndNextButton').click()">この黒板を保存して次へ</button>
           </form>
           <datalist id="workTypeList"><option value="掘削工"></option><option value="型枠工"></option><option value="鉄筋工"></option><option value="コンクリート工"></option><option value="舗装工"></option><option value="出来形測定"></option></datalist>
         </section>

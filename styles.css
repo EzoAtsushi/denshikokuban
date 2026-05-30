@@ -484,7 +484,7 @@ canvas {
 
 .history-item {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr;
   gap: 8px;
   padding: 10px;
   border: 1px solid var(--line);
@@ -509,6 +509,18 @@ canvas {
   min-height: 36px;
   padding: 0 10px;
   font-size: 12px;
+}
+
+.history-actions {
+  display: grid;
+  grid-template-columns: 0.8fr 1fr 0.7fr;
+  gap: 6px;
+}
+
+.danger-button {
+  border-color: #a52c21;
+  background: #fff5f3;
+  color: var(--danger);
 }
 
 .action-bar {

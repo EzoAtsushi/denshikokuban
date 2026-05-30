@@ -3,6 +3,7 @@
   const clearPhotoButton = document.querySelector("#clearPhotoButton");
   const composedLink = document.querySelector("#downloadLink");
   const originalLink = document.querySelector("#originalDownloadLink");
+  const boardPosition = document.querySelector("#boardPosition");
   if (!photoInput || !clearPhotoButton || !composedLink || !originalLink) return;
 
   let originalUrl = "";
@@ -26,6 +27,10 @@
   }
 
   disableOriginalLink();
+  if (boardPosition?.value === "bottom-left") {
+    boardPosition.value = "bottom-right";
+    boardPosition.dispatchEvent(new Event("change"));
+  }
 
   photoInput.addEventListener("change", (event) => {
     const file = event.target.files?.[0];

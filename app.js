@@ -36,6 +36,7 @@ const state = {
   history: [],
   projects: ["〇〇道路改良工事"],
   selectedBoardId: "",
+  editingBoardId: "",
   selectedPanel: "inputPanel",
   boardSize: "compact",
   photo: null,
@@ -83,6 +84,7 @@ function persistState() {
     history: state.history,
     projects: state.projects,
     selectedBoardId: state.selectedBoardId,
+    editingBoardId: state.editingBoardId,
     selectedPanel: state.selectedPanel,
     boardSize: state.boardSize,
   };
@@ -250,9 +252,22 @@ function makeBoardRecord(extra = {}) {
 
 function saveCurrentBoard(extra = {}) {
   readForm();
-  const record = makeBoardRecord(extra);
-  state.history = [record, ...state.history].slice(0, 80);
+  const editingIndex = state.editingBoardId
+    ? state.history.findIndex((record) => record.id === state.editingBoardId)
+    : -1;
+  const record =
+    editingIndex >= 0
+      ? {
+          ...state.history[editingIndex],
+          ...state.board,
+          ...extra,
+          updatedAt: new Date().toISOString(),
+        }
+      : makeBoardRecord(extra);
+  if (editingIndex >= 0) state.history.splice(editingIndex, 1, record);
+  else state.history = [record, ...state.history].slice(0, 80);
   state.selectedBoardId = record.id;
+  state.editingBoardId = record.id;
   if (state.board.projectName && !state.projects.includes(state.board.projectName)) {
     state.projects.unshift(state.board.projectName);
   }
@@ -268,6 +283,7 @@ function prepareNextBoard() {
     note: "",
   };
   state.selectedBoardId = "";
+  state.editingBoardId = "";
   fillForm();
   renderAll();
   persistState();
@@ -277,6 +293,7 @@ function copyFromRecord(record, panelId = "inputPanel") {
   const { id, createdAt, composedImageName, ...board } = record;
   state.board = normalizeBoard({ ...defaultBoard, ...board });
   state.selectedBoardId = id || "";
+  state.editingBoardId = panelId === "inputPanel" ? id || "" : "";
   fillForm();
   renderAll();
   if (panelId) setActivePanel(panelId);
@@ -298,7 +315,11 @@ function renderHistory() {
             <p>${escapeHtml(record.projectName || "")}</p>
             <p>${escapeHtml(record.albumCategory || "施工状況")} / ${escapeHtml(formatDate(record.workDate))} / ${escapeHtml(record.location || "-")}</p>
           </div>
-          <button type="button" data-copy-record="${record.id}">再利用</button>
+          <div class="history-actions">
+            <button type="button" data-edit-record="${record.id}">編集</button>
+            <button type="button" data-use-record="${record.id}">撮影に使う</button>
+            <button class="danger-button" type="button" data-delete-record="${record.id}">削除</button>
+          </div>
         </li>
       `,
     )
@@ -540,7 +561,7 @@ function bindEvents() {
   els.boardForm.addEventListener("input", () => {
     readForm();
     enforceWorkContentLimit();
-    state.selectedBoardId = "";
+    if (!state.editingBoardId) state.selectedBoardId = "";
     renderBlackboard();
     renderShootBoardSelect();
     persistState();
@@ -549,6 +570,7 @@ function bindEvents() {
   els.projectSelect.addEventListener("change", () => {
     state.board.projectName = els.projectSelect.value;
     state.selectedBoardId = "";
+    state.editingBoardId = "";
     fillForm();
     renderAll();
     persistState();
@@ -585,6 +607,7 @@ function bindEvents() {
   document.querySelector("#newBoardButton").addEventListener("click", () => {
     state.board = normalizeBoard({ ...defaultBoard, workDate: new Date().toISOString().slice(0, 10) });
     state.selectedBoardId = "";
+    state.editingBoardId = "";
     fillForm();
     renderAll();
     persistState();
@@ -643,10 +666,33 @@ function bindEvents() {
   });
 
   els.historyList.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-copy-record]");
-    if (!button) return;
-    const record = state.history.find((item) => item.id === button.dataset.copyRecord);
-    if (record) copyFromRecord(record);
+    const editButton = event.target.closest("[data-edit-record]");
+    if (editButton) {
+      const record = state.history.find((item) => item.id === editButton.dataset.editRecord);
+      if (record) copyFromRecord(record, "inputPanel");
+      return;
+    }
+
+    const useButton = event.target.closest("[data-use-record]");
+    if (useButton) {
+      const record = state.history.find((item) => item.id === useButton.dataset.useRecord);
+      if (record) {
+        copyFromRecord(record, null);
+        composePhoto();
+        setActivePanel("photoPanel");
+      }
+      return;
+    }
+
+    const deleteButton = event.target.closest("[data-delete-record]");
+    if (!deleteButton) return;
+    const record = state.history.find((item) => item.id === deleteButton.dataset.deleteRecord);
+    if (!record || !confirm(`「${recordTitle(record)}」を削除しますか？`)) return;
+    state.history = state.history.filter((item) => item.id !== record.id);
+    if (state.selectedBoardId === record.id) state.selectedBoardId = "";
+    if (state.editingBoardId === record.id) state.editingBoardId = "";
+    renderAll();
+    persistState();
   });
 
   document.querySelector("#exportJsonButton").addEventListener("click", exportJson);
@@ -655,6 +701,7 @@ function bindEvents() {
     if (!confirm("履歴を削除しますか？")) return;
     state.history = [];
     state.selectedBoardId = "";
+    state.editingBoardId = "";
     renderAll();
     persistState();
   });

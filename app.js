@@ -216,7 +216,7 @@ function renderBlackboard() {
         .map(
           ([label, value]) => `
             <div class="board-cell board-label">${escapeHtml(label)}</div>
-            <div class="board-cell board-value">${escapeHtml(value || "-")}</div>
+            <div class="board-cell board-value" style="font-size:${getPreviewTextSize(value || "-")}px">${escapeHtml(value || "-")}</div>
           `,
         )
         .join("")}
@@ -240,6 +240,16 @@ function formatDate(date) {
     month: "2-digit",
     day: "2-digit",
   });
+}
+
+function getPreviewTextSize(value) {
+  const text = String(value || "");
+  const length = Array.from(text.replace(/\s/g, "")).length;
+  const lines = text.split("\n").length;
+  if (length > 90 || lines > 5) return 11;
+  if (length > 60 || lines > 4) return 12;
+  if (length > 38 || lines > 3) return 13;
+  return 15;
 }
 
 function makeBoardRecord(extra = {}) {
@@ -405,32 +415,60 @@ function drawBoardOnCanvas(ctx, x, y, width, board) {
 }
 
 function drawText(ctx, text, x, centerY, maxWidth, maxHeight) {
-  const sourceLines = String(text || "-").split("\n");
-  const lines = [];
-  sourceLines.forEach((sourceLine) => {
-    const words = sourceLine.split(/(\s+)/).filter(Boolean);
-    let current = "";
-    for (const word of words.length ? words : [sourceLine]) {
-      const next = current + word;
-      if (ctx.measureText(next).width > maxWidth && current) {
-        lines.push(current.trim());
-        current = word.trimStart();
-      } else {
-        current = next;
-      }
-    }
-    lines.push(current.trim() || " ");
-  });
+  const baseFont = ctx.font;
+  const baseSize = Number(baseFont.match(/(\d+(?:\.\d+)?)px/)?.[1] || 16);
+  const minSize = Math.max(7, Math.floor(baseSize * 0.5));
+  let fittedLines = [];
+  let fittedSize = baseSize;
+  let fittedLineHeight = baseSize * 1.18;
 
-  const lineHeight = Math.min(maxHeight / Math.max(1, lines.length), parseInt(ctx.font, 10) * 1.18);
-  const top = centerY - (lineHeight * lines.length) / 2 + lineHeight / 2;
-  lines.slice(0, 4).forEach((line, index) => {
-    let fitted = line;
-    while (ctx.measureText(fitted).width > maxWidth && fitted.length > 1) {
-      fitted = fitted.slice(0, -2) + "…";
+  for (let size = baseSize; size >= minSize; size -= 1) {
+    ctx.font = baseFont.replace(/(\d+(?:\.\d+)?)px/, `${size}px`);
+    const lines = wrapCanvasText(ctx, text, maxWidth);
+    const lineHeight = size * 1.18;
+    if (lines.length * lineHeight <= maxHeight) {
+      fittedLines = lines;
+      fittedSize = size;
+      fittedLineHeight = lineHeight;
+      break;
     }
-    ctx.fillText(fitted, x, top + lineHeight * index);
+    if (!fittedLines.length || size === minSize) {
+      fittedLines = lines;
+      fittedSize = size;
+      fittedLineHeight = lineHeight;
+    }
+  }
+
+  ctx.font = baseFont.replace(/(\d+(?:\.\d+)?)px/, `${fittedSize}px`);
+  const maxVisibleLines = Math.max(1, Math.floor(maxHeight / fittedLineHeight));
+  const lines = fittedLines.slice(0, maxVisibleLines);
+  const lineHeight = Math.min(fittedLineHeight, maxHeight / Math.max(1, lines.length));
+  const top = centerY - (lineHeight * lines.length) / 2 + lineHeight / 2;
+  lines.forEach((line, index) => {
+    ctx.fillText(line, x, top + lineHeight * index);
   });
+  ctx.font = baseFont;
+}
+
+function wrapCanvasText(ctx, text, maxWidth) {
+  const wrapped = [];
+  String(text || "-")
+    .split("\n")
+    .forEach((sourceLine) => {
+      const chars = Array.from(sourceLine || " ");
+      let current = "";
+      chars.forEach((char) => {
+        const next = current + char;
+        if (ctx.measureText(next).width > maxWidth && current) {
+          wrapped.push(current);
+          current = char.trimStart();
+        } else {
+          current = next;
+        }
+      });
+      wrapped.push(current || " ");
+    });
+  return wrapped;
 }
 
 function composePhoto() {
@@ -457,10 +495,9 @@ function composePhoto() {
   const scale = Number(els.boardScale.value) / 100;
   const boardWidth = Math.round(width * scale);
   const boardHeight = Math.round(boardWidth * 0.72);
-  const margin = Math.round(width * 0.025);
   const position = els.boardPosition.value;
-  const x = position.endsWith("right") ? width - boardWidth - margin : margin;
-  const y = position.startsWith("top") ? margin : height - boardHeight - margin;
+  const x = position.endsWith("right") ? width - boardWidth : 0;
+  const y = position.startsWith("top") ? 0 : height - boardHeight;
   drawBoardOnCanvas(ctx, x, y, boardWidth, state.board);
 
   if (state.composedUrl) URL.revokeObjectURL(state.composedUrl);

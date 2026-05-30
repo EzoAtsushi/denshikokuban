@@ -32,7 +32,7 @@
           <button class="active" type="button" data-panel="inputPanel">入力</button>
           <button type="button" data-panel="previewPanel">黒板</button>
           <button type="button" data-panel="photoPanel">写真</button>
-          <button type="button" data-panel="historyPanel">履歴</button>
+          <button type="button" data-panel="historyPanel">一覧</button>
         </nav>
 
         <section class="panel active" id="inputPanel" aria-labelledby="inputHeading">
@@ -199,12 +199,12 @@
 
         <section class="panel" id="historyPanel" aria-labelledby="historyHeading">
           <div class="section-head">
-            <h2 id="historyHeading">準備データと写真帳連携</h2>
+            <h2 id="historyHeading">保存した黒板一覧</h2>
             <button id="exportCsvButton" type="button">CSV</button>
           </div>
           <div class="export-row">
             <button id="exportJsonButton" type="button">写真帳JSONを書き出し</button>
-            <button id="clearHistoryButton" type="button">履歴削除</button>
+            <button id="clearHistoryButton" type="button">全削除</button>
           </div>
           <ol class="history-list" id="historyList"></ol>
         </section>

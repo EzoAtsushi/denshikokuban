@@ -16,7 +16,6 @@ const defaultBoard = {
   worker: "",
   workContent: "",
   note: "",
-  albumCategory: "施工状況",
   labelWorkType: "工種",
   labelLocation: "場所",
   labelWorkDate: "施工日",
@@ -118,6 +117,7 @@ function normalizeBoard(board) {
   const normalized = { ...defaultBoard, ...board };
   delete normalized.station;
   delete normalized.photoNumber;
+  delete normalized.albumCategory;
   if (!normalized.workContent) {
     normalized.workContent = [1, 2, 3, 4]
       .map((number) => normalized[`workContent${number}`])
@@ -175,12 +175,13 @@ function enforceWorkContentLimit() {
 }
 
 function setActivePanel(panelId) {
-  state.selectedPanel = panelId;
+  const targetPanelId = document.getElementById(panelId) ? panelId : "inputPanel";
+  state.selectedPanel = targetPanelId;
   document.querySelectorAll(".panel").forEach((panel) => {
-    panel.classList.toggle("active", panel.id === panelId);
+    panel.classList.toggle("active", panel.id === targetPanelId);
   });
   document.querySelectorAll(".step-tabs button").forEach((button) => {
-    button.classList.toggle("active", button.dataset.panel === panelId);
+    button.classList.toggle("active", button.dataset.panel === targetPanelId);
   });
   persistState();
 }
@@ -302,7 +303,7 @@ function copyFromRecord(record, panelId = "inputPanel") {
 
 function renderHistory() {
   if (!state.history.length) {
-    els.historyList.innerHTML = `<li class="history-item"><div><h3>まだ履歴がありません</h3><p>保存すると写真帳用データとしてここに残ります。</p></div></li>`;
+    els.historyList.innerHTML = `<li class="history-item"><div><h3>まだ保存した黒板がありません</h3><p>入力して保存するとここに一覧表示されます。</p></div></li>`;
     return;
   }
 
@@ -313,7 +314,7 @@ function renderHistory() {
           <div>
             <h3>${escapeHtml(recordTitle(record))}</h3>
             <p>${escapeHtml(record.projectName || "")}</p>
-            <p>${escapeHtml(record.albumCategory || "施工状況")} / ${escapeHtml(formatDate(record.workDate))} / ${escapeHtml(record.location || "-")}</p>
+            <p>${escapeHtml(formatDate(record.workDate))} / ${escapeHtml(record.location || "-")}</p>
           </div>
           <div class="history-actions">
             <button type="button" data-edit-record="${record.id}">編集</button>
@@ -494,7 +495,6 @@ function exportJson() {
 
 function exportCsv() {
   const headers = [
-    "分類",
     "工事件名",
     "工種",
     "場所",
@@ -505,7 +505,6 @@ function exportCsv() {
     "作成日時",
   ];
   const rows = state.history.map((record) => [
-    record.albumCategory,
     record.projectName,
     record.workType,
     record.location,
@@ -521,7 +520,6 @@ function exportCsv() {
 
 function toPhotoBookRecord(record) {
   return {
-    category: record.albumCategory,
     projectName: record.projectName,
     title: record.workType,
     location: record.location,
@@ -601,7 +599,12 @@ function bindEvents() {
   });
 
   document.querySelector("#copyLastButton").addEventListener("click", () => {
-    if (state.history[0]) copyFromRecord(state.history[0]);
+    if (!state.history[0]) return;
+    copyFromRecord(state.history[0]);
+    state.selectedBoardId = "";
+    state.editingBoardId = "";
+    renderShootBoardSelect();
+    persistState();
   });
   document.querySelector("#duplicateButton").addEventListener("click", prepareNextBoard);
   document.querySelector("#newBoardButton").addEventListener("click", () => {
@@ -698,7 +701,7 @@ function bindEvents() {
   document.querySelector("#exportJsonButton").addEventListener("click", exportJson);
   document.querySelector("#exportCsvButton").addEventListener("click", exportCsv);
   document.querySelector("#clearHistoryButton").addEventListener("click", () => {
-    if (!confirm("履歴を削除しますか？")) return;
+    if (!confirm("保存した黒板をすべて削除しますか？")) return;
     state.history = [];
     state.selectedBoardId = "";
     state.editingBoardId = "";

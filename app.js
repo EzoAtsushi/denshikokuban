@@ -7,6 +7,7 @@ const BOARD_FIELDS = [
   { key: "workContent", labelKey: "labelWorkContent", showKey: "showWorkContent", defaultLabel: "作業内容", type: "multiline" },
   { key: "note", labelKey: "labelNote", showKey: "showNote", defaultLabel: "備考", type: "text" },
 ];
+const DEFAULT_FIELD_ORDER = BOARD_FIELDS.map((field) => field.key);
 
 const defaultBoard = {
   projectName: "〇〇道路改良工事",
@@ -33,11 +34,12 @@ const defaultBoard = {
 const state = {
   board: { ...defaultBoard },
   history: [],
+  photoBookRecords: [],
   projects: ["〇〇道路改良工事"],
   selectedBoardId: "",
   editingBoardId: "",
   selectedPanel: "inputPanel",
-  boardSize: "compact",
+  fieldOrder: [...DEFAULT_FIELD_ORDER],
   photo: null,
   photoName: "",
   composedUrl: "",
@@ -45,8 +47,10 @@ const state = {
 
 const els = {
   syncStatus: document.querySelector("#syncStatus"),
+  refreshAppButton: document.querySelector("#refreshAppButton"),
   projectSelect: document.querySelector("#projectSelect"),
   saveProjectButton: document.querySelector("#saveProjectButton"),
+  deleteProjectButton: document.querySelector("#deleteProjectButton"),
   boardForm: document.querySelector("#boardForm"),
   blackboardPreview: document.querySelector("#blackboardPreview"),
   photoInput: document.querySelector("#photoInput"),
@@ -58,6 +62,8 @@ const els = {
   composeCanvas: document.querySelector("#composeCanvas"),
   downloadLink: document.querySelector("#downloadLink"),
   historyList: document.querySelector("#historyList"),
+  exportProjectButton: document.querySelector("#exportProjectButton"),
+  importProjectInput: document.querySelector("#importProjectInput"),
 };
 
 function loadState() {
@@ -69,6 +75,10 @@ function loadState() {
       ...saved,
       board: normalizeBoard({ ...defaultBoard, ...saved.board }),
       history: Array.isArray(saved.history) ? saved.history.map(normalizeRecord) : [],
+      photoBookRecords: Array.isArray(saved.photoBookRecords)
+        ? saved.photoBookRecords.map(normalizePhotoBookRecord)
+        : [],
+      fieldOrder: normalizeFieldOrder(saved.fieldOrder),
       photo: null,
       composedUrl: "",
     });
@@ -81,17 +91,37 @@ function persistState() {
   const saved = {
     board: state.board,
     history: state.history,
+    photoBookRecords: state.photoBookRecords,
     projects: state.projects,
     selectedBoardId: state.selectedBoardId,
     editingBoardId: state.editingBoardId,
     selectedPanel: state.selectedPanel,
-    boardSize: state.boardSize,
+    fieldOrder: state.fieldOrder,
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
   els.syncStatus.textContent = `端末内に保存済み ${new Date().toLocaleTimeString("ja-JP", {
     hour: "2-digit",
     minute: "2-digit",
   })}`;
+}
+
+async function refreshAppCache() {
+  els.syncStatus.textContent = "最新版を読み込み中...";
+  els.refreshAppButton.disabled = true;
+  try {
+    if ("caches" in window) {
+      const cacheNames = await caches.keys();
+      await Promise.all(cacheNames.map((name) => caches.delete(name)));
+    }
+    if ("serviceWorker" in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map((registration) => registration.unregister()));
+    }
+  } finally {
+    const url = new URL(window.location.href);
+    url.searchParams.set("v", Date.now().toString());
+    window.location.replace(url.toString());
+  }
 }
 
 function readForm() {
@@ -111,6 +141,7 @@ function fillForm() {
     if (field.type === "checkbox") field.checked = Boolean(value);
     else field.value = value ?? "";
   }
+  renderFieldOrder();
 }
 
 function normalizeBoard(board) {
@@ -118,6 +149,7 @@ function normalizeBoard(board) {
   delete normalized.station;
   delete normalized.photoNumber;
   delete normalized.albumCategory;
+  delete normalized.fieldOrder;
   if (!normalized.workContent) {
     normalized.workContent = [1, 2, 3, 4]
       .map((number) => normalized[`workContent${number}`])
@@ -149,13 +181,46 @@ function normalizeBoard(board) {
 }
 
 function normalizeRecord(record) {
-  const { id, createdAt, composedImageName, ...board } = record;
+  const { id, createdAt, composedImageName, fieldOrder, ...board } = record;
   return {
     id: id || crypto.randomUUID(),
     createdAt: createdAt || new Date().toISOString(),
     ...normalizeBoard(board),
+    fieldOrder: normalizeFieldOrder(fieldOrder),
     composedImageName,
   };
+}
+
+function normalizePhotoBookRecord(record) {
+  const board = normalizeBoard(record.board || record);
+  return {
+    id: record.id || crypto.randomUUID(),
+    createdAt: record.createdAt || new Date().toISOString(),
+    projectName: record.projectName || board.projectName || "",
+    imageName: record.imageName || record.composedImageName || "",
+    sourcePhotoName: record.sourcePhotoName || "",
+    boardRecordId: record.boardRecordId || "",
+    sortOrder: Number(record.sortOrder || 0),
+    boardPosition: record.boardPosition || "bottom-left",
+    boardScale: Number(record.boardScale || 34),
+    fieldOrder: normalizeFieldOrder(record.fieldOrder),
+    board,
+  };
+}
+
+function normalizeFieldOrder(order) {
+  const validKeys = new Set(DEFAULT_FIELD_ORDER);
+  const orderedKeys = Array.isArray(order)
+    ? order.filter((key) => validKeys.has(key))
+    : [];
+  return [...new Set([...orderedKeys, ...DEFAULT_FIELD_ORDER])];
+}
+
+function getOrderedBoardFields(order = state.fieldOrder) {
+  const fieldsByKey = new Map(BOARD_FIELDS.map((field) => [field.key, field]));
+  return normalizeFieldOrder(order)
+    .map((key) => fieldsByKey.get(key))
+    .filter(Boolean);
 }
 
 function normalizeWorkContent(value) {
@@ -195,6 +260,42 @@ function renderProjectSelect() {
   els.projectSelect.value = state.board.projectName;
 }
 
+function renderFieldOrder() {
+  const fieldset = els.boardForm.querySelector(".board-items");
+  if (!fieldset) return;
+  state.fieldOrder = normalizeFieldOrder(state.fieldOrder);
+  const rows = new Map(
+    [...fieldset.querySelectorAll("[data-field-key]")].map((row) => [row.dataset.fieldKey, row]),
+  );
+  state.fieldOrder.forEach((key) => {
+    const row = rows.get(key);
+    if (row) fieldset.appendChild(row);
+  });
+  state.fieldOrder.forEach((key, index) => {
+    const row = rows.get(key);
+    if (!row) return;
+    const upButton = row.querySelector('[data-direction="up"]');
+    const downButton = row.querySelector('[data-direction="down"]');
+    if (upButton) upButton.disabled = index === 0;
+    if (downButton) downButton.disabled = index === state.fieldOrder.length - 1;
+  });
+}
+
+function moveField(key, direction) {
+  readForm();
+  const order = normalizeFieldOrder(state.fieldOrder);
+  const index = order.indexOf(key);
+  const nextIndex = direction === "up" ? index - 1 : index + 1;
+  if (index < 0 || nextIndex < 0 || nextIndex >= order.length) return;
+  [order[index], order[nextIndex]] = [order[nextIndex], order[index]];
+  state.fieldOrder = order;
+  renderFieldOrder();
+  renderBlackboard();
+  renderShootBoardSelect();
+  persistState();
+  composePhoto();
+}
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -206,7 +307,6 @@ function escapeHtml(value) {
 
 function renderBlackboard() {
   const rows = getBoardRows(state.board);
-  els.blackboardPreview.classList.toggle("large", state.boardSize === "large");
   els.blackboardPreview.innerHTML = `
     <div class="board-title">
       <span>${escapeHtml(state.board.projectName || "工事件名")}</span>
@@ -225,7 +325,7 @@ function renderBlackboard() {
 }
 
 function getBoardRows(board) {
-  return BOARD_FIELDS.filter((field) => board[field.showKey]).map((field) => {
+  return getOrderedBoardFields(board.fieldOrder || state.fieldOrder).filter((field) => board[field.showKey]).map((field) => {
     const value = field.type === "date" ? formatDate(board[field.key]) : board[field.key];
     return [board[field.labelKey] || field.defaultLabel, value];
   });
@@ -256,6 +356,7 @@ function makeBoardRecord(extra = {}) {
   return {
     id: crypto.randomUUID(),
     createdAt: new Date().toISOString(),
+    fieldOrder: [...state.fieldOrder],
     ...state.board,
     ...extra,
   };
@@ -271,6 +372,7 @@ function saveCurrentBoard(extra = {}) {
       ? {
           ...state.history[editingIndex],
           ...state.board,
+          fieldOrder: [...state.fieldOrder],
           ...extra,
           updatedAt: new Date().toISOString(),
         }
@@ -301,8 +403,9 @@ function prepareNextBoard() {
 }
 
 function copyFromRecord(record, panelId = "inputPanel") {
-  const { id, createdAt, composedImageName, ...board } = record;
+  const { id, createdAt, composedImageName, fieldOrder, ...board } = record;
   state.board = normalizeBoard({ ...defaultBoard, ...board });
+  state.fieldOrder = normalizeFieldOrder(fieldOrder || state.fieldOrder);
   state.selectedBoardId = id || "";
   state.editingBoardId = panelId === "inputPanel" ? id || "" : "";
   fillForm();
@@ -312,12 +415,13 @@ function copyFromRecord(record, panelId = "inputPanel") {
 }
 
 function renderHistory() {
-  if (!state.history.length) {
-    els.historyList.innerHTML = `<li class="history-item"><div><h3>まだ保存した黒板がありません</h3><p>入力して保存するとここに一覧表示されます。</p></div></li>`;
+  const records = currentProjectRecords();
+  if (!records.length) {
+    els.historyList.innerHTML = `<li class="history-item"><div><h3>この案件の黒板はまだありません</h3><p>保存するとここに一覧で残ります。</p></div></li>`;
     return;
   }
 
-  els.historyList.innerHTML = state.history
+  els.historyList.innerHTML = records
     .map(
       (record) => `
         <li class="history-item">
@@ -347,14 +451,15 @@ function recordTitle(record) {
 
 function renderShootBoardSelect() {
   const selectedValue = state.selectedBoardId || "__current";
-  const historyOptions = state.history
+  const records = currentProjectRecords();
+  const historyOptions = records
     .map(
       (record) =>
         `<option value="${escapeHtml(record.id)}">${escapeHtml(recordTitle(record))}</option>`,
     )
     .join("");
   els.shootBoardSelect.innerHTML = `<option value="__current">入力中の黒板</option>${historyOptions}`;
-  els.shootBoardSelect.value = state.history.some((record) => record.id === selectedValue) ? selectedValue : "__current";
+  els.shootBoardSelect.value = records.some((record) => record.id === selectedValue) ? selectedValue : "__current";
 }
 
 function drawBoardOnCanvas(ctx, x, y, width, board) {
@@ -518,58 +623,238 @@ function composePhoto() {
 function makeImageName() {
   const project = (state.board.projectName || "project").replace(/[\\/:*?"<>|\s]+/g, "_");
   const title = recordTitle(state.board).replace(/[\\/:*?"<>|\s]+/g, "_").slice(0, 32) || "board";
-  return `${project}_${state.board.workDate || "date"}_${title}.jpg`;
+  const timestamp = compactDateTime(new Date());
+  return `${project}_${state.board.workDate || "date"}_${title}_${timestamp}.jpg`;
+}
+
+function currentProjectRecords() {
+  const projectName = state.board.projectName || "";
+  return state.history.filter((record) => (record.projectName || "") === projectName);
+}
+
+function currentProjectPhotoBookRecords() {
+  const projectName = state.board.projectName || "";
+  return state.photoBookRecords.filter((record) => (record.projectName || "") === projectName);
+}
+
+function deleteCurrentProject() {
+  const projectName = state.board.projectName || els.projectSelect.value || "";
+  if (!projectName) {
+    alert("削除する案件がありません。");
+    return;
+  }
+  const boardCount = state.history.filter((record) => (record.projectName || "") === projectName).length;
+  const photoCount = state.photoBookRecords.filter((record) => (record.projectName || "") === projectName).length;
+  const message = `${projectName} を削除しますか？\n保存した黒板 ${boardCount}件と写真帳データ ${photoCount}件も削除されます。`;
+  if (!confirm(message)) return;
+
+  state.history = state.history.filter((record) => (record.projectName || "") !== projectName);
+  state.photoBookRecords = state.photoBookRecords.filter((record) => (record.projectName || "") !== projectName);
+  state.projects = state.projects.filter((project) => project !== projectName);
+
+  const nextProject = state.projects.find(Boolean) || "";
+  state.board = normalizeBoard({
+    ...defaultBoard,
+    projectName: nextProject,
+    workDate: new Date().toISOString().slice(0, 10),
+  });
+  if (!nextProject) state.board.projectName = "";
+  state.selectedBoardId = "";
+  state.editingBoardId = "";
+  fillForm();
+  renderAll();
+  persistState();
+}
+
+function rememberPhotoBookRecord() {
+  readForm();
+  const imageName = els.downloadLink.download || makeImageName();
+  const existingIndex = state.photoBookRecords.findIndex((record) => record.imageName === imageName);
+  const record = normalizePhotoBookRecord({
+    id: existingIndex >= 0 ? state.photoBookRecords[existingIndex].id : crypto.randomUUID(),
+    createdAt: existingIndex >= 0 ? state.photoBookRecords[existingIndex].createdAt : new Date().toISOString(),
+    projectName: state.board.projectName || "",
+    imageName,
+    sourcePhotoName: state.photoName || "",
+    boardRecordId: state.selectedBoardId || state.editingBoardId || "",
+    sortOrder: state.photoBookRecords.length + 1,
+    boardPosition: els.boardPosition.value,
+    boardScale: Number(els.boardScale.value),
+    fieldOrder: state.fieldOrder,
+    board: state.board,
+  });
+  if (existingIndex >= 0) state.photoBookRecords.splice(existingIndex, 1, record);
+  else state.photoBookRecords.push(record);
+  persistState();
+}
+
+function exportProjectBundle() {
+  readForm();
+  const projectName = state.board.projectName || "案件";
+  const boards = currentProjectRecords().map((record) => ({
+    ...normalizeRecord(record),
+    fieldOrder: normalizeFieldOrder(record.fieldOrder || state.fieldOrder),
+  }));
+  if (!boards.length) {
+    alert("この案件の保存済み黒板がありません。先に黒板を保存してください。");
+    return;
+  }
+  const payload = {
+    app: "denshikokuban",
+    type: "case-board-bundle",
+    version: 2,
+    exportedAt: new Date().toISOString(),
+    projectName,
+    fieldOrder: normalizeFieldOrder(state.fieldOrder),
+    boards,
+    photoBookRecords: currentProjectPhotoBookRecords(),
+  };
+  const fileName = `${sanitizeFileName(projectName)}_案件黒板一式.json`;
+  downloadText(fileName, JSON.stringify(payload, null, 2), "application/json");
+}
+
+function importProjectBundle(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const payload = JSON.parse(String(reader.result || "{}"));
+      const imported = normalizeProjectBundle(payload);
+      if (!imported.boards.length) {
+        alert("読み込める黒板データがありません。");
+        return;
+      }
+      const merged = [...state.history];
+      imported.boards
+        .slice()
+        .reverse()
+        .forEach((record) => {
+          const index = merged.findIndex((item) => item.id === record.id);
+          if (index >= 0) merged.splice(index, 1, record);
+          else merged.unshift(record);
+        });
+      state.history = merged.slice(0, 80);
+      if (imported.photoBookRecords.length) {
+        const mergedPhotoBookRecords = [...state.photoBookRecords];
+        imported.photoBookRecords.forEach((record) => {
+          const index = mergedPhotoBookRecords.findIndex((item) => item.id === record.id || item.imageName === record.imageName);
+          if (index >= 0) mergedPhotoBookRecords.splice(index, 1, record);
+          else mergedPhotoBookRecords.push(record);
+        });
+        state.photoBookRecords = mergedPhotoBookRecords;
+      }
+      state.projects = [...new Set([imported.projectName, ...state.projects].filter(Boolean))];
+      state.fieldOrder = imported.fieldOrder;
+      copyFromRecord(imported.boards[0], "inputPanel");
+      persistState();
+      alert(`${imported.projectName} の黒板 ${imported.boards.length}件を読み込みました。`);
+    } catch {
+      alert("案件ファイルを読み込めませんでした。");
+    } finally {
+      els.importProjectInput.value = "";
+    }
+  };
+  reader.readAsText(file);
+}
+
+function normalizeProjectBundle(payload) {
+  const projectName = String(payload.projectName || state.board.projectName || "案件");
+  const fieldOrder = normalizeFieldOrder(payload.fieldOrder);
+  const sourceBoards = Array.isArray(payload.boards)
+    ? payload.boards
+    : Array.isArray(payload.history)
+      ? payload.history
+      : [];
+  const boards = sourceBoards.map((record) =>
+    normalizeRecord({
+      ...record,
+      projectName: record.projectName || projectName,
+      fieldOrder: normalizeFieldOrder(record.fieldOrder || fieldOrder),
+    }),
+  );
+  const photoBookRecords = Array.isArray(payload.photoBookRecords)
+    ? payload.photoBookRecords.map((record) =>
+        normalizePhotoBookRecord({
+          ...record,
+          projectName: record.projectName || projectName,
+          fieldOrder: normalizeFieldOrder(record.fieldOrder || fieldOrder),
+        }),
+      )
+    : [];
+  return {
+    projectName,
+    fieldOrder,
+    boards,
+    photoBookRecords,
+  };
+}
+
+function sanitizeFileName(value) {
+  return String(value || "project").replace(/[\\/:*?"<>|\s]+/g, "_").slice(0, 48) || "project";
+}
+
+function compactDateTime(date) {
+  const pad = (value) => String(value).padStart(2, "0");
+  return [
+    date.getFullYear(),
+    pad(date.getMonth() + 1),
+    pad(date.getDate()),
+    "-",
+    pad(date.getHours()),
+    pad(date.getMinutes()),
+    pad(date.getSeconds()),
+  ].join("");
 }
 
 function exportJson() {
+  const records = currentProjectPhotoBookRecords();
+  if (!records.length) {
+    alert("写真帳に渡す写真データがありません。写真タブで合成画像を保存してください。");
+    return;
+  }
+  const projectName = state.board.projectName || "案件";
   const payload = {
-    version: 1,
+    app: "denshikokuban",
+    type: "photo-book-link-data",
+    version: 2,
     exportedAt: new Date().toISOString(),
-    photoBookRecords: state.history.map(toPhotoBookRecord),
+    projectName,
+    photos: records.map(toPhotoBookRecord),
+    photoBookRecords: records.map(toPhotoBookRecord),
   };
-  downloadText("photo-book-records.json", JSON.stringify(payload, null, 2), "application/json");
-}
-
-function exportCsv() {
-  const headers = [
-    "工事件名",
-    "工種",
-    "場所",
-    "施工日",
-    "施工者",
-    "作業内容",
-    "備考",
-    "作成日時",
-  ];
-  const rows = state.history.map((record) => [
-    record.projectName,
-    record.workType,
-    record.location,
-    record.workDate,
-    record.worker,
-    record.workContent,
-    record.note,
-    record.createdAt,
-  ]);
-  const csv = [headers, ...rows].map((row) => row.map(csvCell).join(",")).join("\n");
-  downloadText("photo-book-records.csv", `\uFEFF${csv}`, "text/csv;charset=utf-8");
+  downloadText(`${sanitizeFileName(projectName)}_写真帳データ.json`, JSON.stringify(payload, null, 2), "application/json");
 }
 
 function toPhotoBookRecord(record) {
+  const board = normalizeBoard(record.board || record);
   return {
-    projectName: record.projectName,
-    title: record.workType,
-    location: record.location,
-    shootingDate: record.workDate,
-    photographer: record.worker,
-    workContent: record.workContent,
-    memo: record.note,
+    id: record.id,
+    projectName: record.projectName || board.projectName,
+    imageName: record.imageName || "",
+    sourcePhotoName: record.sourcePhotoName || "",
+    boardRecordId: record.boardRecordId || "",
+    sortOrder: record.sortOrder || 0,
+    boardPosition: record.boardPosition || "bottom-left",
+    boardScale: record.boardScale || 34,
+    fieldOrder: normalizeFieldOrder(record.fieldOrder),
+    title: board.workType,
+    location: board.location,
+    shootingDate: board.workDate,
+    photographer: board.worker,
+    workContent: board.workContent,
+    memo: board.note,
+    labels: Object.fromEntries(
+      getOrderedBoardFields(record.fieldOrder || state.fieldOrder).map((field) => [
+        field.key,
+        board[field.labelKey] || field.defaultLabel,
+      ]),
+    ),
+    visibleFields: getOrderedBoardFields(record.fieldOrder || state.fieldOrder)
+      .filter((field) => board[field.showKey])
+      .map((field) => field.key),
+    board,
     createdAt: record.createdAt,
   };
-}
-
-function csvCell(value) {
-  return `"${String(value ?? "").replaceAll('"', '""')}"`;
 }
 
 function downloadText(filename, content, type) {
@@ -584,6 +869,7 @@ function downloadText(filename, content, type) {
 
 function renderAll() {
   renderProjectSelect();
+  renderFieldOrder();
   renderBlackboard();
   renderHistory();
   renderShootBoardSelect();
@@ -593,6 +879,8 @@ function renderAll() {
 }
 
 function bindEvents() {
+  els.refreshAppButton.addEventListener("click", refreshAppCache);
+
   els.boardForm.addEventListener("input", () => {
     readForm();
     enforceWorkContentLimit();
@@ -600,6 +888,12 @@ function bindEvents() {
     renderBlackboard();
     renderShootBoardSelect();
     persistState();
+  });
+
+  els.boardForm.addEventListener("click", (event) => {
+    const moveButton = event.target.closest("[data-move-field]");
+    if (!moveButton) return;
+    moveField(moveButton.dataset.moveField, moveButton.dataset.direction);
   });
 
   els.projectSelect.addEventListener("change", () => {
@@ -619,25 +913,16 @@ function bindEvents() {
     renderAll();
     persistState();
   });
+  els.deleteProjectButton.addEventListener("click", deleteCurrentProject);
 
   document.querySelectorAll(".step-tabs button").forEach((button) => {
     button.addEventListener("click", () => setActivePanel(button.dataset.panel));
   });
 
-  document.querySelectorAll("[data-board-size]").forEach((button) => {
-    button.addEventListener("click", () => {
-      state.boardSize = button.dataset.boardSize;
-      document.querySelectorAll("[data-board-size]").forEach((sizeButton) => {
-        sizeButton.classList.toggle("active", sizeButton === button);
-      });
-      renderBlackboard();
-      persistState();
-    });
-  });
-
   document.querySelector("#copyLastButton").addEventListener("click", () => {
-    if (!state.history[0]) return;
-    copyFromRecord(state.history[0]);
+    const lastRecord = currentProjectRecords()[0];
+    if (!lastRecord) return;
+    copyFromRecord(lastRecord);
     state.selectedBoardId = "";
     state.editingBoardId = "";
     renderShootBoardSelect();
@@ -687,6 +972,13 @@ function bindEvents() {
 
   els.boardPosition.addEventListener("change", composePhoto);
   els.boardScale.addEventListener("input", composePhoto);
+  els.downloadLink.addEventListener("click", (event) => {
+    if (els.downloadLink.getAttribute("aria-disabled") === "true") {
+      event.preventDefault();
+      return;
+    }
+    rememberPhotoBookRecord();
+  });
 
   els.shootBoardSelect.addEventListener("change", () => {
     const record = state.history.find((item) => item.id === els.shootBoardSelect.value);
@@ -736,10 +1028,13 @@ function bindEvents() {
   });
 
   document.querySelector("#exportJsonButton").addEventListener("click", exportJson);
-  document.querySelector("#exportCsvButton").addEventListener("click", exportCsv);
+  els.exportProjectButton.addEventListener("click", exportProjectBundle);
+  els.importProjectInput.addEventListener("change", (event) => importProjectBundle(event.target.files?.[0]));
   document.querySelector("#clearHistoryButton").addEventListener("click", () => {
-    if (!confirm("保存した黒板をすべて削除しますか？")) return;
-    state.history = [];
+    const projectName = state.board.projectName || "";
+    const displayName = projectName || "この案件";
+    if (!confirm(`${displayName} の保存した黒板をすべて削除しますか？`)) return;
+    state.history = state.history.filter((record) => (record.projectName || "") !== projectName);
     state.selectedBoardId = "";
     state.editingBoardId = "";
     renderAll();

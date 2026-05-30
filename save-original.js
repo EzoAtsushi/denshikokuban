@@ -26,11 +26,18 @@
     originalLink.setAttribute("aria-disabled", "true");
   }
 
-  disableOriginalLink();
-  if (boardPosition?.value === "bottom-left") {
+  function setDefaultBoardPosition() {
+    if (!boardPosition) return;
+    if (boardPosition.value && boardPosition.value !== "bottom-left") return;
     boardPosition.value = "bottom-right";
     boardPosition.dispatchEvent(new Event("change"));
   }
+
+  disableOriginalLink();
+  setDefaultBoardPosition();
+  window.addEventListener("DOMContentLoaded", setDefaultBoardPosition);
+  setTimeout(setDefaultBoardPosition, 100);
+  setTimeout(setDefaultBoardPosition, 500);
 
   photoInput.addEventListener("change", (event) => {
     const file = event.target.files?.[0];

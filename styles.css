@@ -142,7 +142,7 @@ button:active {
 
 .step-tabs {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 4px;
   margin: 10px 0;
   padding: 4px;
@@ -472,6 +472,12 @@ canvas {
   grid-template-columns: 1fr auto;
   gap: 8px;
   margin-bottom: 10px;
+}
+
+.board-list-section {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
 }
 
 .history-list {

@@ -11,150 +11,34 @@
   </head>
   <body>
     <div class="app-shell">
-      <header class="topbar">
-        <div>
-          <h1>電子黒板</h1>
-          <p id="syncStatus">端末内に自動保存</p>
-        </div>
-        <button class="icon-button" id="newBoardButton" type="button" aria-label="新規作成">
-          <span aria-hidden="true">+</span>
-        </button>
-      </header>
-
+      <header class="topbar"><div><h1>電子黒板</h1><p id="syncStatus">端末内に自動保存</p></div><button class="icon-button" id="newBoardButton" type="button" aria-label="新規作成"><span aria-hidden="true">+</span></button></header>
       <main>
-        <section class="project-strip" aria-label="現場">
-          <label for="projectSelect">現場</label>
-          <select id="projectSelect"></select>
-          <button id="saveProjectButton" type="button">登録</button>
-        </section>
-
-        <nav class="step-tabs" aria-label="作業ステップ">
-          <button class="active" type="button" data-panel="inputPanel">入力</button>
-          <button type="button" data-panel="previewPanel">黒板</button>
-          <button type="button" data-panel="photoPanel">写真</button>
-          <button type="button" data-panel="historyPanel">履歴</button>
-        </nav>
-
+        <section class="project-strip" aria-label="現場"><label for="projectSelect">現場</label><select id="projectSelect"></select><button id="saveProjectButton" type="button">登録</button></section>
+        <nav class="step-tabs" aria-label="作業ステップ"><button class="active" type="button" data-panel="inputPanel">入力</button><button type="button" data-panel="previewPanel">黒板</button><button type="button" data-panel="photoPanel">写真</button><button type="button" data-panel="historyPanel">履歴</button></nav>
         <section class="panel active" id="inputPanel" aria-labelledby="inputHeading">
-          <div class="section-head">
-            <h2 id="inputHeading">黒板情報</h2>
-            <button id="copyLastButton" type="button">前回複製</button>
-          </div>
-
+          <div class="section-head"><h2 id="inputHeading">黒板情報</h2><div class="head-actions"><button id="copyLastButton" type="button">前回複製</button><button id="saveAndNextButton" type="button">保存して次へ</button></div></div>
           <form id="boardForm" class="field-grid">
-            <label>
-              工事件名
-              <input id="projectName" name="projectName" autocomplete="organization" required />
-            </label>
-            <label>
-              写真番号
-              <input id="photoNumber" name="photoNumber" inputmode="numeric" />
-            </label>
-            <label>
-              写真帳分類
-              <select id="albumCategory" name="albumCategory">
-                <option value="施工状況">施工状況</option>
-                <option value="出来形管理">出来形管理</option>
-                <option value="品質管理">品質管理</option>
-                <option value="安全管理">安全管理</option>
-                <option value="材料検収">材料検収</option>
-                <option value="その他">その他</option>
-              </select>
-            </label>
+            <label>工事件名<input id="projectName" name="projectName" autocomplete="organization" required /></label>
+            <label>写真番号<input id="photoNumber" name="photoNumber" inputmode="numeric" /></label>
+            <label>写真帳分類<select id="albumCategory" name="albumCategory"><option value="施工状況">施工状況</option><option value="出来形管理">出来形管理</option><option value="品質管理">品質管理</option><option value="安全管理">安全管理</option><option value="材料検収">材料検収</option><option value="その他">その他</option></select></label>
             <fieldset class="board-items span-2">
               <legend>黒板表示項目</legend>
-              <div class="item-row">
-                <label class="item-toggle"><input id="showWorkType" name="showWorkType" type="checkbox" />表示</label>
-                <label>項目名<input id="labelWorkType" name="labelWorkType" /></label>
-                <label class="item-value">内容<input id="workType" name="workType" list="workTypeList" required /></label>
-              </div>
-              <div class="item-row">
-                <label class="item-toggle"><input id="showLocation" name="showLocation" type="checkbox" />表示</label>
-                <label>項目名<input id="labelLocation" name="labelLocation" /></label>
-                <label class="item-value">内容<input id="location" name="location" placeholder="右岸側 排水路" /></label>
-              </div>
-              <div class="item-row">
-                <label class="item-toggle"><input id="showWorkDate" name="showWorkDate" type="checkbox" />表示</label>
-                <label>項目名<input id="labelWorkDate" name="labelWorkDate" /></label>
-                <label class="item-value">内容<input id="workDate" name="workDate" type="date" required /></label>
-              </div>
-              <div class="item-row">
-                <label class="item-toggle"><input id="showWorker" name="showWorker" type="checkbox" />表示</label>
-                <label>項目名<input id="labelWorker" name="labelWorker" /></label>
-                <label class="item-value">内容<input id="worker" name="worker" autocomplete="name" /></label>
-              </div>
-              <div class="item-row">
-                <label class="item-toggle"><input id="showWorkContent1" name="showWorkContent1" type="checkbox" />表示</label>
-                <label>項目名<input id="labelWorkContent1" name="labelWorkContent1" /></label>
-                <label class="item-value">内容<input id="workContent1" name="workContent1" placeholder="施工前確認" /></label>
-              </div>
-              <div class="item-row">
-                <label class="item-toggle"><input id="showWorkContent2" name="showWorkContent2" type="checkbox" />表示</label>
-                <label>項目名<input id="labelWorkContent2" name="labelWorkContent2" /></label>
-                <label class="item-value">内容<input id="workContent2" name="workContent2" placeholder="出来形確認" /></label>
-              </div>
-              <div class="item-row">
-                <label class="item-toggle"><input id="showWorkContent3" name="showWorkContent3" type="checkbox" />表示</label>
-                <label>項目名<input id="labelWorkContent3" name="labelWorkContent3" /></label>
-                <label class="item-value">内容<input id="workContent3" name="workContent3" placeholder="品質確認" /></label>
-              </div>
-              <div class="item-row">
-                <label class="item-toggle"><input id="showWorkContent4" name="showWorkContent4" type="checkbox" />表示</label>
-                <label>項目名<input id="labelWorkContent4" name="labelWorkContent4" /></label>
-                <label class="item-value">内容<input id="workContent4" name="workContent4" placeholder="完了確認" /></label>
-              </div>
-              <div class="item-row">
-                <label class="item-toggle"><input id="showNote" name="showNote" type="checkbox" />表示</label>
-                <label>項目名<input id="labelNote" name="labelNote" /></label>
-                <label class="item-value">内容<textarea id="note" name="note" rows="2" placeholder="施工前、出来形確認など"></textarea></label>
-              </div>
+              <div class="item-row"><label class="item-toggle"><input id="showWorkType" name="showWorkType" type="checkbox" />表示</label><label>項目名<input id="labelWorkType" name="labelWorkType" /></label><label class="item-value">内容<input id="workType" name="workType" list="workTypeList" required /></label></div>
+              <div class="item-row"><label class="item-toggle"><input id="showLocation" name="showLocation" type="checkbox" />表示</label><label>項目名<input id="labelLocation" name="labelLocation" /></label><label class="item-value">内容<input id="location" name="location" placeholder="右岸側 排水路" /></label></div>
+              <div class="item-row"><label class="item-toggle"><input id="showWorkDate" name="showWorkDate" type="checkbox" />表示</label><label>項目名<input id="labelWorkDate" name="labelWorkDate" /></label><label class="item-value">内容<input id="workDate" name="workDate" type="date" required /></label></div>
+              <div class="item-row"><label class="item-toggle"><input id="showWorker" name="showWorker" type="checkbox" />表示</label><label>項目名<input id="labelWorker" name="labelWorker" /></label><label class="item-value">内容<input id="worker" name="worker" autocomplete="name" /></label></div>
+              <div class="item-row"><label class="item-toggle"><input id="showWorkContent" name="showWorkContent" type="checkbox" />表示</label><label>項目名<input id="labelWorkContent" name="labelWorkContent" /></label><label class="item-value">内容<textarea id="workContent" name="workContent" rows="4" placeholder="施工前確認&#10;出来形確認&#10;品質確認&#10;完了確認"></textarea></label></div>
+              <div class="item-row"><label class="item-toggle"><input id="showNote" name="showNote" type="checkbox" />表示</label><label>項目名<input id="labelNote" name="labelNote" /></label><label class="item-value">内容<textarea id="note" name="note" rows="2" placeholder="施工前、出来形確認など"></textarea></label></div>
             </fieldset>
           </form>
-
-          <datalist id="workTypeList">
-            <option value="掘削工"></option>
-            <option value="型枠工"></option>
-            <option value="鉄筋工"></option>
-            <option value="コンクリート工"></option>
-            <option value="舗装工"></option>
-            <option value="出来形測定"></option>
-          </datalist>
+          <datalist id="workTypeList"><option value="掘削工"></option><option value="型枠工"></option><option value="鉄筋工"></option><option value="コンクリート工"></option><option value="舗装工"></option><option value="出来形測定"></option></datalist>
         </section>
-
-        <section class="panel" id="previewPanel" aria-labelledby="previewHeading">
-          <div class="section-head">
-            <h2 id="previewHeading">黒板プレビュー</h2>
-            <div class="size-control" aria-label="黒板サイズ">
-              <button class="active" type="button" data-board-size="compact">小</button>
-              <button type="button" data-board-size="large">大</button>
-            </div>
-          </div>
-          <div class="board-stage">
-            <div class="blackboard" id="blackboardPreview" aria-label="電子黒板プレビュー"></div>
-          </div>
-        </section>
-
-        <section class="panel" id="photoPanel" aria-labelledby="photoHeading">
-          <div class="section-head"><h2 id="photoHeading">写真合成</h2><button id="clearPhotoButton" type="button">写真解除</button></div>
-          <label class="photo-picker" for="photoInput"><input id="photoInput" type="file" accept="image/*" capture="environment" /><span>写真を撮る / 選ぶ</span><strong id="photoName">未選択</strong></label>
-          <div class="compose-options">
-            <label>配置<select id="boardPosition"><option value="bottom-left">左下</option><option value="bottom-right">右下</option><option value="top-left">左上</option><option value="top-right">右上</option></select></label>
-            <label>大きさ<input id="boardScale" type="range" min="22" max="48" value="34" /></label>
-          </div>
-          <canvas id="composeCanvas" width="1280" height="960" aria-label="合成結果"></canvas>
-          <a class="download-link" id="downloadLink" download="electronic-board-photo.jpg">合成画像を保存</a>
-        </section>
-
-        <section class="panel" id="historyPanel" aria-labelledby="historyHeading">
-          <div class="section-head"><h2 id="historyHeading">履歴と写真帳連携</h2><button id="exportCsvButton" type="button">CSV</button></div>
-          <div class="export-row"><button id="exportJsonButton" type="button">写真帳JSONを書き出し</button><button id="clearHistoryButton" type="button">履歴削除</button></div>
-          <ol class="history-list" id="historyList"></ol>
-        </section>
+        <section class="panel" id="previewPanel" aria-labelledby="previewHeading"><div class="section-head"><h2 id="previewHeading">黒板プレビュー</h2><div class="size-control" aria-label="黒板サイズ"><button class="active" type="button" data-board-size="compact">小</button><button type="button" data-board-size="large">大</button></div></div><div class="board-stage"><div class="blackboard" id="blackboardPreview" aria-label="電子黒板プレビュー"></div></div></section>
+        <section class="panel" id="photoPanel" aria-labelledby="photoHeading"><div class="section-head"><h2 id="photoHeading">写真合成</h2><button id="clearPhotoButton" type="button">写真解除</button></div><label class="photo-picker" for="photoInput"><input id="photoInput" type="file" accept="image/*" capture="environment" /><span>写真を撮る / 選ぶ</span><strong id="photoName">未選択</strong></label><div class="compose-options"><label>配置<select id="boardPosition"><option value="bottom-left">左下</option><option value="bottom-right">右下</option><option value="top-left">左上</option><option value="top-right">右上</option></select></label><label>大きさ<input id="boardScale" type="range" min="22" max="48" value="34" /></label></div><canvas id="composeCanvas" width="1280" height="960" aria-label="合成結果"></canvas><a class="download-link" id="downloadLink" download="electronic-board-photo.jpg">合成画像を保存</a></section>
+        <section class="panel" id="historyPanel" aria-labelledby="historyHeading"><div class="section-head"><h2 id="historyHeading">準備データと写真帳連携</h2><button id="exportCsvButton" type="button">CSV</button></div><div class="export-row"><button id="exportJsonButton" type="button">写真帳JSONを書き出し</button><button id="clearHistoryButton" type="button">履歴削除</button></div><ol class="history-list" id="historyList"></ol></section>
       </main>
-
       <footer class="action-bar"><button id="duplicateButton" type="button">複製</button><button id="composeButton" class="primary" type="button">合成</button><button id="saveButton" class="success" type="button">保存</button></footer>
     </div>
-
     <script src="./app.js" defer></script>
   </body>
 </html>

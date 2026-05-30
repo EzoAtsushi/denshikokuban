@@ -1,9 +1,13 @@
-const CACHE_NAME = "construction-board-app-v15";
+const CACHE_NAME = "construction-board-app-v18";
 const APP_ASSETS = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
+  "./save-original.js",
+  "./photo-book.html",
+  "./photo-book.css",
+  "./photo-book.js",
   "./manifest.webmanifest",
   "./icon.svg",
 ];

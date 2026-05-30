@@ -101,6 +101,21 @@ button:active {
   line-height: 1.3;
 }
 
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.refresh-button {
+  min-height: 40px;
+  padding: 0 10px;
+  border-color: #b9c6d4;
+  background: #f7fafc;
+  color: var(--text);
+  font-size: 12px;
+}
+
 .icon-button {
   width: 44px;
   min-height: 44px;
@@ -112,6 +127,7 @@ button:active {
 }
 
 .project-strip,
+.case-file-panel,
 .step-tabs,
 .panel,
 .action-bar {
@@ -120,7 +136,7 @@ button:active {
 
 .project-strip {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr auto auto;
   align-items: center;
   gap: 8px;
   padding: 10px;
@@ -140,6 +156,37 @@ button:active {
   min-width: 0;
 }
 
+.case-file-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.case-file-panel input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.case-file-panel button,
+.case-file-panel .file-button {
+  min-height: 46px;
+  font-size: 14px;
+}
+
+.primary-file-button {
+  border-color: var(--primary-dark);
+  background: var(--primary);
+  color: #fff;
+}
+
 .step-tabs {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -150,8 +197,7 @@ button:active {
   border-radius: 8px;
 }
 
-.step-tabs button,
-.size-control button {
+.step-tabs button {
   min-height: 38px;
   border: 0;
   background: transparent;
@@ -159,8 +205,7 @@ button:active {
   font-size: 13px;
 }
 
-.step-tabs button.active,
-.size-control button.active {
+.step-tabs button.active {
   background: var(--surface);
   color: var(--text);
   box-shadow: 0 3px 12px rgba(21, 32, 42, 0.13);
@@ -287,7 +332,7 @@ input[type="checkbox"] {
 
 .item-row {
   display: grid;
-  grid-template-columns: 58px minmax(82px, 0.8fr) minmax(0, 1.7fr);
+  grid-template-columns: 54px 58px minmax(82px, 0.8fr) minmax(0, 1.7fr);
   gap: 8px;
   align-items: end;
   padding-bottom: 9px;
@@ -307,13 +352,16 @@ input[type="checkbox"] {
   color: var(--text);
 }
 
-.size-control {
+.order-buttons {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 3px;
-  padding: 3px;
-  background: #e9eef4;
-  border-radius: 8px;
+}
+
+.order-buttons button {
+  min-height: 42px;
+  padding: 0;
+  font-size: 16px;
 }
 
 .board-stage {
@@ -339,10 +387,6 @@ input[type="checkbox"] {
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.18),
     inset 0 0 28px rgba(0, 0, 0, 0.26);
-}
-
-.blackboard.large {
-  aspect-ratio: 16 / 10;
 }
 
 .board-title {
@@ -474,6 +518,19 @@ canvas {
   margin-bottom: 10px;
 }
 
+.file-button {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .board-list-section {
   margin-top: 16px;
   padding-top: 14px;
@@ -591,5 +648,13 @@ canvas {
   .head-actions {
     flex-wrap: wrap;
     justify-content: flex-end;
+  }
+
+  .project-strip {
+    grid-template-columns: auto 1fr;
+  }
+
+  .project-strip button {
+    grid-column: span 1;
   }
 }

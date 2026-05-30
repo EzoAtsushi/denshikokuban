@@ -32,7 +32,6 @@
           <button class="active" type="button" data-panel="inputPanel">入力</button>
           <button type="button" data-panel="previewPanel">黒板</button>
           <button type="button" data-panel="photoPanel">写真</button>
-          <button type="button" data-panel="historyPanel">一覧</button>
         </nav>
 
         <section class="panel active" id="inputPanel" aria-labelledby="inputHeading">
@@ -50,17 +49,6 @@
             <label>
               工事件名
               <input id="projectName" name="projectName" autocomplete="organization" required />
-            </label>
-            <label>
-              写真帳分類
-              <select id="albumCategory" name="albumCategory">
-                <option value="施工状況">施工状況</option>
-                <option value="出来形管理">出来形管理</option>
-                <option value="品質管理">品質管理</option>
-                <option value="安全管理">安全管理</option>
-                <option value="材料検収">材料検収</option>
-                <option value="その他">その他</option>
-              </select>
             </label>
             <fieldset class="board-items span-2">
               <legend>黒板表示項目</legend>
@@ -142,6 +130,18 @@
             <option value="舗装工"></option>
             <option value="出来形測定"></option>
           </datalist>
+
+          <section class="board-list-section" aria-labelledby="historyHeading">
+            <div class="section-head">
+              <h2 id="historyHeading">保存した黒板一覧</h2>
+              <button id="exportCsvButton" type="button">CSV</button>
+            </div>
+            <div class="export-row">
+              <button id="exportJsonButton" type="button">写真帳JSONを書き出し</button>
+              <button id="clearHistoryButton" type="button">全削除</button>
+            </div>
+            <ol class="history-list" id="historyList"></ol>
+          </section>
         </section>
 
         <section class="panel" id="previewPanel" aria-labelledby="previewHeading">
@@ -195,18 +195,6 @@
 
           <canvas id="composeCanvas" width="1280" height="960" aria-label="合成結果"></canvas>
           <a class="download-link" id="downloadLink" download="electronic-board-photo.jpg">合成画像を保存</a>
-        </section>
-
-        <section class="panel" id="historyPanel" aria-labelledby="historyHeading">
-          <div class="section-head">
-            <h2 id="historyHeading">保存した黒板一覧</h2>
-            <button id="exportCsvButton" type="button">CSV</button>
-          </div>
-          <div class="export-row">
-            <button id="exportJsonButton" type="button">写真帳JSONを書き出し</button>
-            <button id="clearHistoryButton" type="button">全削除</button>
-          </div>
-          <ol class="history-list" id="historyList"></ol>
         </section>
       </main>
 

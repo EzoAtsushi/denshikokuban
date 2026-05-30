@@ -16,21 +16,31 @@
           <h1>電子黒板</h1>
           <p id="syncStatus">端末内に自動保存</p>
         </div>
-        <button class="icon-button" id="newBoardButton" type="button" aria-label="新規作成">
-          <span aria-hidden="true">+</span>
-        </button>
+        <div class="top-actions">
+          <button class="refresh-button" id="refreshAppButton" type="button">最新版</button>
+          <button class="icon-button" id="newBoardButton" type="button" aria-label="新規作成">
+            <span aria-hidden="true">+</span>
+          </button>
+        </div>
       </header>
 
       <main>
-        <section class="project-strip" aria-label="現場">
-          <label for="projectSelect">現場</label>
+        <section class="project-strip" aria-label="案件">
+          <label for="projectSelect">案件</label>
           <select id="projectSelect"></select>
           <button id="saveProjectButton" type="button">登録</button>
+          <button class="danger-button" id="deleteProjectButton" type="button">削除</button>
+        </section>
+
+        <section class="case-file-panel" aria-label="案件ファイル">
+          <button id="exportProjectButton" type="button">案件ファイルに保存</button>
+          <label class="file-button primary-file-button" for="importProjectInput">案件ファイルを読み込み</label>
+          <input id="importProjectInput" type="file" accept="application/json,.json" />
         </section>
 
         <nav class="step-tabs" aria-label="作業ステップ">
           <button class="active" type="button" data-panel="inputPanel">入力</button>
-          <button type="button" data-panel="previewPanel">黒板</button>
+          <button type="button" data-panel="previewPanel">プレビュー</button>
           <button type="button" data-panel="photoPanel">写真</button>
         </nav>
 
@@ -52,7 +62,11 @@
             </label>
             <fieldset class="board-items span-2">
               <legend>黒板表示項目</legend>
-              <div class="item-row">
+              <div class="item-row" data-field-key="workType">
+                <div class="order-buttons" aria-label="工種の並び順">
+                  <button type="button" data-move-field="workType" data-direction="up">↑</button>
+                  <button type="button" data-move-field="workType" data-direction="down">↓</button>
+                </div>
                 <label class="item-toggle"><input id="showWorkType" name="showWorkType" type="checkbox" />表示</label>
                 <label>
                   項目名
@@ -63,7 +77,11 @@
                   <input id="workType" name="workType" list="workTypeList" required />
                 </label>
               </div>
-              <div class="item-row">
+              <div class="item-row" data-field-key="location">
+                <div class="order-buttons" aria-label="場所の並び順">
+                  <button type="button" data-move-field="location" data-direction="up">↑</button>
+                  <button type="button" data-move-field="location" data-direction="down">↓</button>
+                </div>
                 <label class="item-toggle"><input id="showLocation" name="showLocation" type="checkbox" />表示</label>
                 <label>
                   項目名
@@ -74,7 +92,11 @@
                   <input id="location" name="location" placeholder="右岸側 排水路" />
                 </label>
               </div>
-              <div class="item-row">
+              <div class="item-row" data-field-key="workDate">
+                <div class="order-buttons" aria-label="施工日の並び順">
+                  <button type="button" data-move-field="workDate" data-direction="up">↑</button>
+                  <button type="button" data-move-field="workDate" data-direction="down">↓</button>
+                </div>
                 <label class="item-toggle"><input id="showWorkDate" name="showWorkDate" type="checkbox" />表示</label>
                 <label>
                   項目名
@@ -85,7 +107,11 @@
                   <input id="workDate" name="workDate" type="date" required />
                 </label>
               </div>
-              <div class="item-row">
+              <div class="item-row" data-field-key="worker">
+                <div class="order-buttons" aria-label="施工者の並び順">
+                  <button type="button" data-move-field="worker" data-direction="up">↑</button>
+                  <button type="button" data-move-field="worker" data-direction="down">↓</button>
+                </div>
                 <label class="item-toggle"><input id="showWorker" name="showWorker" type="checkbox" />表示</label>
                 <label>
                   項目名
@@ -96,7 +122,11 @@
                   <input id="worker" name="worker" autocomplete="name" />
                 </label>
               </div>
-              <div class="item-row">
+              <div class="item-row" data-field-key="workContent">
+                <div class="order-buttons" aria-label="作業内容の並び順">
+                  <button type="button" data-move-field="workContent" data-direction="up">↑</button>
+                  <button type="button" data-move-field="workContent" data-direction="down">↓</button>
+                </div>
                 <label class="item-toggle"><input id="showWorkContent" name="showWorkContent" type="checkbox" />表示</label>
                 <label>
                   項目名
@@ -107,7 +137,11 @@
                   <textarea id="workContent" name="workContent" rows="4" placeholder="施工前確認&#10;出来形確認&#10;品質確認&#10;完了確認"></textarea>
                 </label>
               </div>
-              <div class="item-row">
+              <div class="item-row" data-field-key="note">
+                <div class="order-buttons" aria-label="備考の並び順">
+                  <button type="button" data-move-field="note" data-direction="up">↑</button>
+                  <button type="button" data-move-field="note" data-direction="down">↓</button>
+                </div>
                 <label class="item-toggle"><input id="showNote" name="showNote" type="checkbox" />表示</label>
                 <label>
                   項目名
@@ -134,10 +168,9 @@
           <section class="board-list-section" aria-labelledby="historyHeading">
             <div class="section-head">
               <h2 id="historyHeading">保存した黒板一覧</h2>
-              <button id="exportCsvButton" type="button">CSV</button>
             </div>
             <div class="export-row">
-              <button id="exportJsonButton" type="button">写真帳JSONを書き出し</button>
+              <button id="exportJsonButton" type="button">写真帳データを書き出し</button>
               <button id="clearHistoryButton" type="button">全削除</button>
             </div>
             <ol class="history-list" id="historyList"></ol>
@@ -147,10 +180,6 @@
         <section class="panel" id="previewPanel" aria-labelledby="previewHeading">
           <div class="section-head">
             <h2 id="previewHeading">黒板プレビュー</h2>
-            <div class="size-control" aria-label="黒板サイズ">
-              <button class="active" type="button" data-board-size="compact">小</button>
-              <button type="button" data-board-size="large">大</button>
-            </div>
           </div>
           <div class="board-stage">
             <div class="blackboard" id="blackboardPreview" aria-label="電子黒板プレビュー"></div>
@@ -196,6 +225,7 @@
           <canvas id="composeCanvas" width="1280" height="960" aria-label="合成結果"></canvas>
           <a class="download-link" id="downloadLink" download="electronic-board-photo.jpg">合成画像を保存</a>
         </section>
+
       </main>
 
       <footer class="action-bar">

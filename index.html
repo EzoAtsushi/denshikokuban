@@ -8,6 +8,30 @@
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="stylesheet" href="./styles.css" />
+    <style>
+      .download-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .download-actions .download-link {
+        margin-top: 0;
+      }
+
+      .secondary-download {
+        border: 1px solid #b8c5d3;
+        background: #fff;
+        color: #15202a;
+      }
+
+      @media (max-width: 360px) {
+        .download-actions {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
   </head>
   <body>
     <div class="app-shell">
@@ -17,6 +41,7 @@
           <p id="syncStatus">端末内に自動保存</p>
         </div>
         <div class="top-actions">
+          <a class="photo-book-link" href="./photo-book.html">写真帳</a>
           <button class="refresh-button" id="refreshAppButton" type="button">最新版</button>
           <button class="icon-button" id="newBoardButton" type="button" aria-label="新規作成">
             <span aria-hidden="true">+</span>
@@ -223,7 +248,10 @@
           </div>
 
           <canvas id="composeCanvas" width="1280" height="960" aria-label="合成結果"></canvas>
-          <a class="download-link" id="downloadLink" download="electronic-board-photo.jpg">合成画像を保存</a>
+          <div class="download-actions">
+            <a class="download-link" id="downloadLink" download="electronic-board-photo.jpg">合成画像を保存</a>
+            <a class="download-link secondary-download" id="originalDownloadLink" download="source-photo.jpg">元写真を保存</a>
+          </div>
         </section>
 
       </main>
@@ -236,5 +264,6 @@
     </div>
 
     <script src="./app.js" defer></script>
+    <script src="./save-original.js" defer></script>
   </body>
 </html>
